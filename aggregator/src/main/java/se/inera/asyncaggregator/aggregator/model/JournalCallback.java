@@ -9,6 +9,7 @@ public class JournalCallback {
     private Integer delayMs;
     private String status;
     private List<JournalNote> notes;
+    private Integer respondents;
 
     public JournalCallback() {
     }
@@ -20,6 +21,16 @@ public class JournalCallback {
         this.delayMs = delayMs;
         this.status = status;
         this.notes = notes;
+    }
+
+    public JournalCallback(String source, String patientId, String correlationId, Integer delayMs, String status, List<JournalNote> notes, Integer respondents) {
+        this.source = source;
+        this.patientId = patientId;
+        this.correlationId = correlationId;
+        this.delayMs = delayMs;
+        this.status = status;
+        this.notes = notes;
+        this.respondents = respondents;
     }
 
     public String getSource() {
@@ -68,5 +79,13 @@ public class JournalCallback {
 
     public void setNotes(List<JournalNote> notes) {
         this.notes = notes;
+    }
+
+    public Integer getRespondents() {
+        return respondents;
+    }
+
+    public void setRespondents(Integer respondents) {
+        this.respondents = respondents;
     }
 }

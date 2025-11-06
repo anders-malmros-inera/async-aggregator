@@ -44,7 +44,7 @@ public class AggregatorService {
         logger.info("Resource URLs: {}", resourceUrls);
         
         String[] resourceUrlArray = resourceUrls.split(",");
-        List<Mono<Boolean>> resourceCalls = new ArrayList<>();
+    List<Mono<Boolean>> resourceCalls = new ArrayList<>();
         
         for (int i = 0; i < 3; i++) {
             int delay = parseDelay(i < delayStrings.length ? delayStrings[i] : "0");
@@ -62,6 +62,8 @@ public class AggregatorService {
             Mono<Boolean> call = callResource(resourceUrl, command);
             resourceCalls.add(call);
         }
+        // Register how many callbacks we expect for this correlationId (one per resource call)
+        sseService.registerExpected(correlationId, resourceCalls.size());
         
         return Flux.merge(resourceCalls)
             .filter(accepted -> accepted)
