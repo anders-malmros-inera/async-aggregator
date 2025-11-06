@@ -18,7 +18,7 @@ services:
       - "resource2:172.28.0.3"
       - "resource3:172.28.0.2"
     networks:
-      async-aggregator-network:
+      aggregator-network:
         ipv4_address: 172.28.0.4
 
   resource1:
@@ -33,7 +33,7 @@ services:
     extra_hosts:
       - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
+      aggregator-network:
         ipv4_address: 172.28.0.5
 
   resource2:
@@ -48,7 +48,7 @@ services:
     extra_hosts:
       - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
+      aggregator-network:
         ipv4_address: 172.28.0.3
 
   resource3:
@@ -63,7 +63,7 @@ services:
     extra_hosts:
       - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
+      aggregator-network:
         ipv4_address: 172.28.0.2
 
   client:
@@ -80,11 +80,11 @@ services:
     extra_hosts:
       - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
+      aggregator-network:
         ipv4_address: 172.28.0.6
 
 networks:
-  async-aggregator-network:
+  aggregator-network:
     driver: bridge
     ipam:
       config:

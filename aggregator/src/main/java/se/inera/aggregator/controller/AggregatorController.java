@@ -1,15 +1,15 @@
-package se.inera.asyncaggregator.aggregator.controller;
+package se.inera.aggregator.controller;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import se.inera.asyncaggregator.aggregator.model.JournalCallback;
-import se.inera.asyncaggregator.aggregator.model.JournalRequest;
-import se.inera.asyncaggregator.aggregator.model.JournalResponse;
-import se.inera.asyncaggregator.aggregator.service.AggregatorService;
-import se.inera.asyncaggregator.aggregator.service.SseService;
+import se.inera.aggregator.model.JournalCallback;
+import se.inera.aggregator.model.JournalRequest;
+import se.inera.aggregator.model.JournalResponse;
+import se.inera.aggregator.service.AggregatorService;
+import se.inera.aggregator.service.SseService;
 
 @RestController
 @RequestMapping("/aggregate")

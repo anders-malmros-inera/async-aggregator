@@ -1,9 +1,9 @@
-package se.inera.asyncaggregator.aggregator.service;
+package se.inera.aggregator.service;
 
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
-import se.inera.asyncaggregator.aggregator.model.JournalCallback;
+import se.inera.aggregator.model.JournalCallback;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,9 +77,8 @@ public class SseService {
         sinks.remove(correlationId);
         // send a final 'COMPLETE' callback so clients get an explicit final event
         try {
-            se.inera.asyncaggregator.aggregator.model.JournalCallback finalCallback =
-                new se.inera.asyncaggregator.aggregator.model.JournalCallback(
-                    "aggregator", null, correlationId, null, "COMPLETE", null, info.received.get());
+            JournalCallback finalCallback = new JournalCallback(
+                "aggregator", null, correlationId, null, "COMPLETE", null, info.received.get());
             info.sink.tryEmitNext(finalCallback);
         } catch (Exception ignored) {
         }

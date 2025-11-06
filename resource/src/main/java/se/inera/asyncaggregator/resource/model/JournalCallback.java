@@ -1,4 +1,4 @@
-package se.inera.asyncaggregator.resource.model;
+package se.inera.aggregator.resource.model;
 
 import java.util.List;
 

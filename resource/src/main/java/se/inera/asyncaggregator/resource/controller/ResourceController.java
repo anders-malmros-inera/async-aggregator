@@ -1,11 +1,11 @@
-package se.inera.asyncaggregator.resource.controller;
+package se.inera.aggregator.resource.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import se.inera.asyncaggregator.resource.model.JournalCommand;
-import se.inera.asyncaggregator.resource.service.ResourceService;
+import se.inera.aggregator.resource.model.JournalCommand;
+import se.inera.aggregator.resource.service.ResourceService;
 
 @RestController
 @RequestMapping("/journals")

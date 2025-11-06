@@ -1,4 +1,4 @@
-package se.inera.asyncaggregator.resource.service;
+package se.inera.aggregator.resource.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import se.inera.asyncaggregator.resource.model.JournalCallback;
-import se.inera.asyncaggregator.resource.model.JournalCommand;
-import se.inera.asyncaggregator.resource.model.JournalNote;
+import se.inera.aggregator.resource.model.JournalCallback;
+import se.inera.aggregator.resource.model.JournalCommand;
+import se.inera.aggregator.resource.model.JournalNote;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

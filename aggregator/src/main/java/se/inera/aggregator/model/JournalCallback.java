@@ -1,4 +1,4 @@
-package se.inera.asyncaggregator.aggregator.model;
+package se.inera.aggregator.model;
 
 import java.util.List;
 

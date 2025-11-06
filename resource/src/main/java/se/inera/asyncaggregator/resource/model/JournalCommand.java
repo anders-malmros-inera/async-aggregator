@@ -1,4 +1,4 @@
-package se.inera.asyncaggregator.resource.model;
+package se.inera.aggregator.resource.model;
 
 public class JournalCommand {
     private String patientId;

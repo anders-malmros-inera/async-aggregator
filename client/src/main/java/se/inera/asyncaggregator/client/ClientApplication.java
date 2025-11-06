@@ -1,4 +1,4 @@
-package se.inera.asyncaggregator.client;
+package se.inera.aggregator.client;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
