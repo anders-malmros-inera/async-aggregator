@@ -30,7 +30,7 @@ public class AggregatorController {
     }
 
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<JournalCallback>> streamEvents(@RequestParam String correlationId) {
+    public Flux<ServerSentEvent<JournalCallback>> streamEvents(@RequestParam("correlationId") String correlationId) {
         return sseService.subscribe(correlationId)
             .map(callback -> ServerSentEvent.<JournalCallback>builder()
                 .data(callback)

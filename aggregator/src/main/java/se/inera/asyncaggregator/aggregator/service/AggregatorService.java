@@ -1,5 +1,7 @@
 package se.inera.asyncaggregator.aggregator.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class AggregatorService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AggregatorService.class);
 
     private final WebClient webClient;
     private final SseService sseService;
@@ -36,12 +40,17 @@ public class AggregatorService {
         String correlationId = UUID.randomUUID().toString();
         String[] delayStrings = parseDelays(request.getDelays());
         
+        logger.info("Starting aggregation for patient {} with correlation ID {}", request.getPatientId(), correlationId);
+        logger.info("Resource URLs: {}", resourceUrls);
+        
         String[] resourceUrlArray = resourceUrls.split(",");
         List<Mono<Boolean>> resourceCalls = new ArrayList<>();
         
         for (int i = 0; i < 3; i++) {
             int delay = parseDelay(i < delayStrings.length ? delayStrings[i] : "0");
             String resourceUrl = i < resourceUrlArray.length ? resourceUrlArray[i].trim() : resourceUrlArray[0].trim();
+            
+            logger.info("Calling resource {} with delay {}", resourceUrl, delay);
             
             JournalCommand command = new JournalCommand(
                 request.getPatientId(),
@@ -57,7 +66,10 @@ public class AggregatorService {
         return Flux.merge(resourceCalls)
             .filter(accepted -> accepted)
             .count()
-            .map(respondents -> new JournalResponse(respondents.intValue(), correlationId));
+            .map(respondents -> {
+                logger.info("Aggregation complete: {} respondents", respondents);
+                return new JournalResponse(respondents.intValue(), correlationId);
+            });
     }
 
     private Mono<Boolean> callResource(String resourceUrl, JournalCommand command) {
@@ -66,7 +78,12 @@ public class AggregatorService {
             .bodyValue(command)
             .retrieve()
             .toBodilessEntity()
-            .map(response -> response.getStatusCode() == HttpStatus.OK)
+            .map(response -> {
+                boolean accepted = response.getStatusCode() == HttpStatus.OK;
+                logger.info("Resource {} returned status {} (accepted={})", resourceUrl, response.getStatusCode(), accepted);
+                return accepted;
+            })
+            .doOnError(error -> logger.error("Error calling resource {}: {}", resourceUrl, error.getMessage(), error))
             .onErrorReturn(false);
     }
 
