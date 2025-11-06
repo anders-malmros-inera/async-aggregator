@@ -1,0 +1,23 @@
+target
+**/target
+.git
+.gitignore
+.vscode
+.idea
+node_modules
+*.log
+
+# local maven repository (if accidentally copied)
+.m2
+
+# Docker files
+Dockerfile
+**/Dockerfile
+
+# build outputs
+build
+dist
+
+# OS files
+Thumbs.db
+.DS_Store
