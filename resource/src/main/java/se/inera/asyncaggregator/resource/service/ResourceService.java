@@ -1,9 +1,12 @@
 package se.inera.asyncaggregator.resource.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import se.inera.asyncaggregator.resource.model.JournalCallback;
 import se.inera.asyncaggregator.resource.model.JournalCommand;
 import se.inera.asyncaggregator.resource.model.JournalNote;
@@ -18,6 +21,8 @@ import java.util.UUID;
 @Service
 public class ResourceService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ResourceService.class);
+
     private final WebClient webClient;
     
     @Value("${resource.id}")
@@ -28,15 +33,28 @@ public class ResourceService {
     }
 
     public Mono<Void> processJournalRequest(JournalCommand command) {
+        logger.info("Received journal request for patient {} with delay {} ms", command.getPatientId(), command.getDelay());
+        
         if (command.getDelay() < 0) {
             return Mono.error(new IllegalArgumentException("Request rejected - delay is negative"));
         }
 
-        return Mono.delay(Duration.ofMillis(command.getDelay()))
-            .then(Mono.defer(() -> sendCallback(command)));
+        // Start async processing in the background
+        Mono.delay(Duration.ofMillis(command.getDelay()))
+            .then(Mono.defer(() -> sendCallback(command)))
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe(
+                v -> logger.info("Callback sent successfully for correlation ID {}", command.getCorrelationId()),
+                error -> logger.error("Error sending callback for correlation ID {}: {}", command.getCorrelationId(), error.getMessage())
+            );
+
+        // Return immediately
+        return Mono.empty();
     }
 
     private Mono<Void> sendCallback(JournalCommand command) {
+        logger.info("Preparing callback for patient {} to {}", command.getPatientId(), command.getCallbackUrl());
+        
         List<JournalNote> notes = generateSampleNotes(command.getPatientId());
         
         JournalCallback callback = new JournalCallback(
@@ -48,11 +66,15 @@ public class ResourceService {
             notes
         );
 
+        logger.info("Sending callback with {} notes to {}", notes.size(), command.getCallbackUrl());
+
         return webClient.post()
             .uri(command.getCallbackUrl())
             .bodyValue(callback)
             .retrieve()
             .toBodilessEntity()
+            .doOnSuccess(v -> logger.info("Callback posted successfully"))
+            .doOnError(error -> logger.error("Error posting callback: {}", error.getMessage()))
             .then();
     }
 
