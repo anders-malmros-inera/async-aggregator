@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  aggregator:
+    build:
+      context: ./aggregator
+      dockerfile: Dockerfile
+    container_name: aggregator
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    extra_hosts:
+      - "resource1:172.18.0.5"
+      - "resource2:172.18.0.3"
+      - "resource3:172.18.0.2"
+    networks:
+      async-aggregator-network:
+        ipv4_address: 172.18.0.4
+
+  resource1:
+    build:
+      context: ./resource
+      dockerfile: Dockerfile
+    container_name: resource1
+    environment:
+      - RESOURCE_ID=resource-1
+    dns:
+      - 8.8.8.8
+    extra_hosts:
+      - "aggregator:172.18.0.4"
+    networks:
+      async-aggregator-network:
+        ipv4_address: 172.18.0.5
+
+  resource2:
+    build:
+      context: ./resource
+      dockerfile: Dockerfile
+    container_name: resource2
+    environment:
+      - RESOURCE_ID=resource-2
+    dns:
+      - 8.8.8.8
+    extra_hosts:
+      - "aggregator:172.18.0.4"
+    networks:
+      async-aggregator-network:
+        ipv4_address: 172.18.0.3
+
+  resource3:
+    build:
+      context: ./resource
+      dockerfile: Dockerfile
+    container_name: resource3
+    environment:
+      - RESOURCE_ID=resource-3
+    dns:
+      - 8.8.8.8
+    extra_hosts:
+      - "aggregator:172.18.0.4"
+    networks:
+      async-aggregator-network:
+        ipv4_address: 172.18.0.2
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client
+    ports:
+      - "8082:8082"
+    depends_on:
+      - aggregator
+    dns:
+      - 8.8.8.8
+    extra_hosts:
+      - "aggregator:172.18.0.4"
+    networks:
+      async-aggregator-network:
+        ipv4_address: 172.18.0.6
+
+networks:
+  async-aggregator-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16

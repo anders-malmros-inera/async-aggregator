@@ -1,0 +1,13 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: resource
+
+resource:
+  id: ${RESOURCE_ID:resource-1}
+
+logging:
+  level:
+    se.inera.asyncaggregator: DEBUG

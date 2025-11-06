@@ -1,0 +1,13 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: client
+
+aggregator:
+  url: http://aggregator:8080
+
+logging:
+  level:
+    se.inera.asyncaggregator: DEBUG

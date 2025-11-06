@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Async Aggregator Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        .result h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .info {
+            background-color: #e7f3ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .info p {
+            margin: 5px 0;
+        }
+        .notes-container {
+            margin-top: 20px;
+        }
+        .note {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .note-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        .note-source {
+            background-color: #4CAF50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .note-text {
+            color: #333;
+            line-height: 1.6;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .status.listening {
+            background-color: #2196F3;
+            color: white;
+        }
+        .status.completed {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Async Aggregator Demo - SSE Pattern</h1>
+        
+        <div class="form-group">
+            <label for="patientId">Patient ID:</label>
+            <input type="text" id="patientId" placeholder="Enter patient ID (e.g., patient-123)" value="patient-123">
+        </div>
+        
+        <div class="form-group">
+            <label for="delays">Delays (comma-separated, in ms):</label>
+            <input type="text" id="delays" placeholder="e.g., 1000,2000,3000 or -1,1000,2000" value="1000,2000,3000">
+            <small style="color: #666; display: block; margin-top: 5px;">
+                Use -1 to reject, 0 for immediate, or positive values for delay in milliseconds
+            </small>
+        </div>
+        
+        <button id="callButton" onclick="callAggregator()">Call Aggregator</button>
+        
+        <div id="result" class="result hidden">
+            <h2>Results <span id="statusBadge" class="status"></span></h2>
+            
+            <div class="info">
+                <p><strong>Respondents:</strong> <span id="respondents">0</span></p>
+                <p><strong>Correlation ID:</strong> <span id="correlationId">-</span></p>
+            </div>
+            
+            <div class="notes-container">
+                <h3>Journal Notes:</h3>
+                <div id="notes"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AGGREGATOR_URL = 'http://localhost:8080';
+        let eventSource = null;
+        let allNotes = [];
+
+        async function callAggregator() {
+            const patientId = document.getElementById('patientId').value;
+            const delays = document.getElementById('delays').value;
+            const callButton = document.getElementById('callButton');
+            
+            if (!patientId || !delays) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            callButton.disabled = true;
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('notes').innerHTML = '';
+            allNotes = [];
+
+            try {
+                const response = await fetch(`${AGGREGATOR_URL}/aggregate/journals`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        patientId: patientId,
+                        delays: delays
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to call aggregator');
+                }
+
+                const data = await response.json();
+                
+                document.getElementById('respondents').textContent = data.respondents;
+                document.getElementById('correlationId').textContent = data.correlationId;
+                document.getElementById('result').classList.remove('hidden');
+                
+                if (data.respondents > 0) {
+                    startSSE(data.correlationId);
+                } else {
+                    document.getElementById('statusBadge').textContent = 'No respondents';
+                    document.getElementById('statusBadge').className = 'status completed';
+                    callButton.disabled = false;
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+                callButton.disabled = false;
+            }
+        }
+
+        function startSSE(correlationId) {
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.textContent = 'Listening for events...';
+            statusBadge.className = 'status listening';
+
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`${AGGREGATOR_URL}/aggregate/stream?correlationId=${correlationId}`);
+            
+            eventSource.onmessage = function(event) {
+                const callback = JSON.parse(event.data);
+                console.log('Received callback:', callback);
+                
+                if (callback.notes && callback.notes.length > 0) {
+                    callback.notes.forEach(note => {
+                        note.source = callback.source;
+                        allNotes.push(note);
+                    });
+                    
+                    allNotes.sort((a, b) => {
+                        return new Date(b.date) - new Date(a.date);
+                    });
+                    
+                    renderNotes();
+                }
+            };
+
+            eventSource.onerror = function(error) {
+                console.log('SSE error or connection closed');
+                eventSource.close();
+                statusBadge.textContent = 'Completed';
+                statusBadge.className = 'status completed';
+                document.getElementById('callButton').disabled = false;
+            };
+        }
+
+        function renderNotes() {
+            const notesContainer = document.getElementById('notes');
+            notesContainer.innerHTML = '';
+            
+            if (allNotes.length === 0) {
+                notesContainer.innerHTML = '<p style="color: #666;">No notes received yet...</p>';
+                return;
+            }
+
+            allNotes.forEach(note => {
+                const noteDiv = document.createElement('div');
+                noteDiv.className = 'note';
+                
+                const formattedDate = new Date(note.date).toLocaleString();
+                
+                noteDiv.innerHTML = `
+                    <div class="note-header">
+                        <div>
+                            <span class="note-source">${note.source}</span>
+                            <span class="note-meta">Date: ${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="note-meta">
+                        <strong>Patient:</strong> ${note.patientId} | 
+                        <strong>Doctor:</strong> ${note.doctorId} | 
+                        <strong>Caregiver:</strong> ${note.caregiverId}
+                    </div>
+                    <div class="note-text">
+                        ${note.note}
+                    </div>
+                `;
+                
+                notesContainer.appendChild(noteDiv);
+            });
+        }
+
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) {
+                eventSource.close();
+            }
+        });
+    </script>
+</body>
+</html>
