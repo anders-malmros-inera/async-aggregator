@@ -13,13 +13,8 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
-    extra_hosts:
-      - "resource1:172.28.0.5"
-      - "resource2:172.28.0.3"
-      - "resource3:172.28.0.2"
     networks:
-      async-aggregator-network:
-        ipv4_address: 172.28.0.4
+      - async-aggregator-network
 
   resource1:
     build:
@@ -30,11 +25,8 @@ services:
       - RESOURCE_ID=resource-1
     dns:
       - 8.8.8.8
-    extra_hosts:
-      - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
-        ipv4_address: 172.28.0.5
+      - async-aggregator-network
 
   resource2:
     build:
@@ -45,11 +37,8 @@ services:
       - RESOURCE_ID=resource-2
     dns:
       - 8.8.8.8
-    extra_hosts:
-      - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
-        ipv4_address: 172.28.0.3
+      - async-aggregator-network
 
   resource3:
     build:
@@ -60,11 +49,8 @@ services:
       - RESOURCE_ID=resource-3
     dns:
       - 8.8.8.8
-    extra_hosts:
-      - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
-        ipv4_address: 172.28.0.2
+      - async-aggregator-network
 
   client:
     build:
@@ -77,11 +63,20 @@ services:
       - aggregator
     dns:
       - 8.8.8.8
-    extra_hosts:
-      - "aggregator:172.28.0.4"
     networks:
-      async-aggregator-network:
-        ipv4_address: 172.28.0.6
+      - async-aggregator-network
+
+  maven-test:
+    image: "maven:3.9.4-eclipse-temurin-17"
+    container_name: maven-test
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace:rw
+      - ~/.m2:/root/.m2:rw
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mvn -pl aggregator -am -Dtest=se.inera.asyncaggregator.aggregator.service.SseServiceTest test"]
+    networks:
+      - async-aggregator-network
 
 networks:
   async-aggregator-network:
