@@ -6,12 +6,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>se.inera.aggregator</groupId>
-    <artifactId>async-aggregator-parent</artifactId>
+    <artifactId>aggregator-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Async Aggregator Parent</name>
-    <description>Parent POM for Async Aggregator Demo using SSE</description>
+    <name>Aggregator Parent</name>
+    <description>Parent POM for Aggregator Demo using SSE</description>
 
     <modules>
         <module>client</module>

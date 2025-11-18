@@ -1,4 +1,4 @@
-# Async Aggregator Demo - SSE Pattern
+# Aggregator Demo - SSE Pattern
 
 This project demonstrates an asynchronous aggregation pattern using Server-Sent Events (SSE) for real-time updates. The system orchestrates parallel calls to multiple resource services and streams results back to clients in real-time.
 
@@ -397,7 +397,7 @@ Note: For local development, update the URLs in `application.yml` files accordin
 ## Project Structure
 
 ```text
-async-aggregator/
+aggregator/
 ├── aggregator/          # Aggregator service (WebFlux)
 │   ├── src/
 │   │   ├── main/java/se/inera/aggregator/
@@ -412,7 +412,7 @@ async-aggregator/
 │   └── pom.xml
 ├── resource/            # Resource service (WebFlux)
 │   ├── src/
-│   │   ├── main/java/se/inera/asyncaggregator/resource/
+│   │   ├── main/java/se/inera/aggregator/resource/
 │   │   │   ├── controller/      # REST endpoints
 │   │   │   ├── service/         # Business logic
 │   │   │   ├── config/          # Spring configuration

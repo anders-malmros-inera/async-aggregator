@@ -10,4 +10,4 @@ resource:
 
 logging:
   level:
-    se.inera.asyncaggregator: DEBUG
+    se.inera.aggregator: DEBUG
