@@ -2,6 +2,76 @@
 
 This project demonstrates an asynchronous aggregation pattern using Server-Sent Events (SSE) for real-time updates. The system orchestrates parallel calls to multiple resource services and streams results back to clients in real-time.
 
+## Server-Sent Events (SSE)
+
+Server-Sent Events is a web standard that enables servers to push real-time updates to clients over a single HTTP connection. Unlike WebSockets which provide bidirectional communication, SSE is designed specifically for unidirectional server-to-client streaming.
+
+### SSE Standard
+
+SSE is defined in the [HTML Living Standard](https://html.spec.whatwg.org/multipage/server-sent-events.html) maintained by WHATWG. The protocol uses the `text/event-stream` MIME type and builds on standard HTTP, making it simple, efficient, and firewall-friendly.
+
+**Key characteristics:**
+
+- **Unidirectional**: Server pushes data to client; client cannot send messages over the SSE connection
+- **HTTP-based**: Uses standard HTTP connections with chunked transfer encoding
+- **Auto-reconnection**: Built-in browser support for automatic reconnection with configurable retry intervals
+- **Event IDs**: Supports event identification and resume-from-last-event functionality
+- **Text-based**: Events are UTF-8 text, typically JSON payloads
+- **Simple protocol**: Much simpler than WebSockets, easier to implement and debug
+
+### SSE vs. WebSockets vs. Polling
+
+| Feature | SSE | WebSockets | Long Polling |
+|---------|-----|------------|--------------|
+| Direction | Server → Client | Bidirectional | Request/Response |
+| Protocol | HTTP | WebSocket (ws://) | HTTP |
+| Reconnection | Automatic | Manual | Manual |
+| Browser Support | All modern browsers | All modern browsers | Universal |
+| Overhead | Low | Medium | High |
+| Firewall-friendly | Yes (HTTP) | Sometimes blocked | Yes (HTTP) |
+| Use Case | Real-time updates, notifications | Chat, gaming, collaborative editing | Simple updates |
+
+### SSE in This Project
+
+This project uses SSE to stream aggregation results in real-time:
+
+1. **Client opens SSE connection** with correlationId: `GET /aggregate/stream?correlationId={uuid}`
+2. **Aggregator emits events** as resource callbacks arrive:
+
+   ```text
+   event: callback
+   data: {"source":"resource-1","notes":[...],"delayMs":1000}
+   
+   event: callback
+   data: {"source":"resource-2","notes":[...],"delayMs":2000}
+   
+   event: summary
+   data: {"totalNotes":6,"respondents":2}
+   ```
+
+3. **Browser receives events** via JavaScript `EventSource` API and updates UI immediately
+4. **Connection closes** automatically after the summary event
+
+### Implementation Details
+
+- **Server**: Spring WebFlux with `Sinks.Many<ServerSentEvent<?>>`
+  - One sink per correlationId managed by `SseSinkManager`
+  - Thread-safe concurrent event emission
+  - Automatic cleanup on completion or client disconnect
+
+- **Client**: Vanilla JavaScript `EventSource` API
+  - Event listeners for `callback` and `summary` event types
+  - Automatic connection management and reconnection
+  - Graceful handling of connection close
+
+### References
+
+- [HTML Living Standard - Server-Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html) - Official W3C/WHATWG specification
+- [MDN Web Docs - Server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) - Comprehensive guide and API reference
+- [MDN EventSource API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) - JavaScript client API documentation
+- [Spring WebFlux SSE Documentation](https://docs.spring.io/spring-framework/reference/web/webflux/controller/ann-methods/responseentity.html#webflux-ann-responseentity-sse) - Server-side implementation with Spring
+- [Using Server-Sent Events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) - Practical tutorial
+
 ## Architecture Overview
 
 The system consists of three types of services communicating via HTTP and SSE:
