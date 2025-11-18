@@ -72,7 +72,7 @@ services:
       - ./:/workspace:rw
       - ~/.m2:/root/.m2:rw
     entrypoint: ["/bin/sh", "-c"]
-    command: ["mvn -pl aggregator -am -Dtest=se.inera.asyncaggregator.aggregator.service.SseServiceTest test"]
+    command: ["mvn clean test"]
     networks:
       - aggregator-network
 

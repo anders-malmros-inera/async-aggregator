@@ -31,6 +31,7 @@ public class AggregatorService {
     @Value("${resource.urls}")
     private String resourceUrls;
 
+    private static final int DEFAULT_RESOURCE_COUNT = 3;
     public AggregatorService(WebClient.Builder webClientBuilder, SseService sseService) {
         this.webClient = webClientBuilder.build();
         this.sseService = sseService;
@@ -38,13 +39,12 @@ public class AggregatorService {
 
     public Mono<JournalResponse> aggregateJournals(JournalRequest request) {
         String correlationId = UUID.randomUUID().toString();
-        String[] delayStrings = parseDelays(request.getDelays());
-        
-        logger.info("Starting aggregation for patient {} with correlation ID {}", request.getPatientId(), correlationId);
-        logger.info("Resource URLs: {}", resourceUrls);
-        
-        String[] resourceUrlArray = resourceUrls.split(",");
-        List<Mono<Boolean>> resourceCalls = buildResourceCalls(request, correlationId, delayStrings);
+    String[] delayStrings = parseDelays(request.getDelays());
+
+    logger.info("Starting aggregation for patient {} with correlation ID {}", request.getPatientId(), correlationId);
+    logger.info("Resource URLs: {}", resourceUrls);
+
+    List<Mono<Boolean>> resourceCalls = buildResourceCalls(request, correlationId, delayStrings);
 
         // Register how many resource callbacks we expect for this correlationId.
         // We must return immediately so the client can open the SSE stream
@@ -65,24 +65,41 @@ public class AggregatorService {
 
     private List<Mono<Boolean>> buildResourceCalls(JournalRequest request, String correlationId, String[] delayStrings) {
         List<Mono<Boolean>> resourceCalls = new ArrayList<>();
-        String[] resourceUrlArray = resourceUrls.split(",");
-        for (int i = 0; i < 3; i++) {
+        String[] resourceUrlArray = getResourceUrlArray();
+
+        int calls = DEFAULT_RESOURCE_COUNT;
+        for (int i = 0; i < calls; i++) {
             int delay = parseDelay(i < delayStrings.length ? delayStrings[i] : "0");
-            String resourceUrl = i < resourceUrlArray.length ? resourceUrlArray[i].trim() : resourceUrlArray[0].trim();
-            
+            String resourceUrl = selectResourceUrl(resourceUrlArray, i);
+
             logger.info("Calling resource {} with delay {}", resourceUrl, delay);
-            
-            JournalCommand command = new JournalCommand(
-                request.getPatientId(),
-                delay,
-                callbackUrl,
-                correlationId
-            );
-            
+
+            JournalCommand command = createJournalCommand(request.getPatientId(), delay, correlationId);
+
             Mono<Boolean> call = callResource(resourceUrl, command);
             resourceCalls.add(call);
         }
         return resourceCalls;
+    }
+
+    private String[] getResourceUrlArray() {
+        if (resourceUrls == null || resourceUrls.trim().isEmpty()) {
+            return new String[] {"http://localhost:8080"};
+        }
+        String[] arr = resourceUrls.split(",");
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = arr[i].trim();
+        }
+        return arr;
+    }
+
+    private String selectResourceUrl(String[] urls, int index) {
+        if (urls == null || urls.length == 0) return "http://localhost:8080";
+        return index < urls.length ? urls[index] : urls[0];
+    }
+
+    private JournalCommand createJournalCommand(String patientId, int delay, String correlationId) {
+        return new JournalCommand(patientId, delay, callbackUrl, correlationId);
     }
 
     private Mono<Boolean> callResource(String resourceUrl, JournalCommand command) {

@@ -27,6 +27,15 @@
             });
         }
 
+        function updateProgress(count) {
+            const p = $('progressBar');
+            if (!p) return;
+            const respondents = Number(count) || 0;
+            // default to 3 expected resources
+            const percent = Math.min(100, Math.round((respondents / 3) * 100));
+            p.style.width = percent + '%';
+        }
+
         function appendRaw(text) {
             const raw = $('rawEvents');
             const now = new Date().toISOString();
@@ -40,6 +49,7 @@
             if (result) result.classList.add('hidden');
             setText('statusBadge', '');
             setText('respondents', '0');
+            updateProgress(0);
             setText('correlationId', '-');
             const callButton = $('callButton'); if (callButton) callButton.disabled = true;
             const raw = $('rawEvents'); if (raw) raw.textContent = '';
@@ -58,7 +68,7 @@
             if (payload.status === 'COMPLETE') {
                 setText('statusBadge', 'Completed');
                 const sb = $('statusBadge'); if (sb) sb.className = 'status completed';
-                if (payload.respondents != null) setText('respondents', payload.respondents);
+                if (payload.respondents != null) { setText('respondents', payload.respondents); updateProgress(payload.respondents); }
                 const cb = $('callButton'); if (cb) cb.disabled = false;
                 sse.close();
                 return;
@@ -110,6 +120,7 @@
             try {
                 const data = await window.ApiClient.callAggregator(baseUrl, { patientId, delays, strategy });
                 setText('respondents', data.respondents);
+                updateProgress(data.respondents);
                 setText('correlationId', data.correlationId);
                 const result = $('result'); if (result) result.classList.remove('hidden');
                 setText('statusBadge', 'Listening for events...');

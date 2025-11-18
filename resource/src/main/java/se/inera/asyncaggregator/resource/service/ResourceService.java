@@ -12,15 +12,7 @@ import se.inera.aggregator.resource.model.JournalCommand;
 import se.inera.aggregator.resource.model.JournalNote;
 
 import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class ResourceService {
@@ -28,12 +20,14 @@ public class ResourceService {
     private static final Logger logger = LoggerFactory.getLogger(ResourceService.class);
 
     private final WebClient webClient;
+    private final JournalNoteGenerator noteGenerator;
     
     @Value("${resource.id}")
     private String resourceId;
 
-    public ResourceService(WebClient.Builder webClientBuilder) {
+    public ResourceService(WebClient.Builder webClientBuilder, JournalNoteGenerator noteGenerator) {
         this.webClient = webClientBuilder.build();
+        this.noteGenerator = noteGenerator;
     }
 
     public Mono<Void> processJournalRequest(JournalCommand command) {
@@ -59,7 +53,7 @@ public class ResourceService {
     private Mono<Void> sendCallback(JournalCommand command) {
         logger.info("Preparing callback for patient {} to {}", command.getPatientId(), command.getCallbackUrl());
         
-        List<JournalNote> notes = generateSampleNotes(command.getPatientId());
+        List<JournalNote> notes = noteGenerator.generateSampleNotes(command.getPatientId(), resourceId);
         
         JournalCallback callback = new JournalCallback(
             resourceId,
@@ -80,36 +74,5 @@ public class ResourceService {
             .doOnSuccess(v -> logger.info("Callback posted successfully"))
             .doOnError(error -> logger.error("Error posting callback: {}", error.getMessage()))
             .then();
-    }
-
-    private List<JournalNote> generateSampleNotes(String patientId) {
-        List<JournalNote> notes = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-        
-        for (int i = 0; i < 2; i++) {
-            String noteId = UUID.randomUUID().toString();
-            String date = randomDateInPastYear().format(formatter);
-            
-            JournalNote note = new JournalNote(
-                noteId,
-                date,
-                "Caregiver-" + resourceId,
-                patientId,
-                "Doctor-" + (i + 1),
-                "Sample note " + (i + 1) + " from " + resourceId
-            );
-            notes.add(note);
-        }
-        
-        return notes;
-    }
-
-    private LocalDateTime randomDateInPastYear() {
-        // Return a random LocalDateTime within the past 365 days (inclusive)
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = now.minusDays(365);
-        long secondsBetween = ChronoUnit.SECONDS.between(start, now);
-        long randomOffsetSeconds = ThreadLocalRandom.current().nextLong(secondsBetween + 1);
-        return start.plusSeconds(randomOffsetSeconds);
     }
 }

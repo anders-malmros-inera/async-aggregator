@@ -1,0 +1,13 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: aggregator-test
+
+aggregator:
+  callback:
+    url: http://not-used:8080/aggregate/callback
+
+resource:
+  urls: http://localhost:9999,http://localhost:9998,http://localhost:9997
