@@ -505,12 +505,12 @@ These events count toward total responses but not toward successful respondents.
 graph TB
     Browser[Browser Client<br/>EventSource API]
     
-    subgraph "Client Service :8082"
+    subgraph C[Client Service :8082]
         UI[Thymeleaf UI<br/>Strategy Selection]
         Controller[ClientController<br/>Route by Strategy]
     end
     
-    subgraph "Aggregator Service :8080"
+    subgraph A[Aggregator Service :8080]
         AggCtrl[AggregatorController<br/>POST /journals<br/>GET /stream<br/>POST /callback]
         AggSvc[AggregatorService<br/>Orchestration<br/>Timeout Enforcement]
         SseSvc[SseService<br/>Event Emission<br/>Timeout Scheduling]
@@ -519,12 +519,14 @@ graph TB
         SinkInfo[SinkInfo<br/>received/respondents/errors<br/>Disposable/ScheduledFuture]
     end
     
-    subgraph "Resource Services"
+    subgraph R[Resource Services]
         R1[Resource-1 :8081<br/>POST /journals<br/>POST /journals/direct]
         R2[Resource-2 :8083<br/>POST /journals<br/>POST /journals/direct]
         R3[Resource-3 :8084<br/>POST /journals<br/>POST /journals/direct]
     end
     
+    C-->A------->R
+
     Browser -->|HTTP Form Submit<br/>patientId, delays, timeout, strategy| UI
     UI --> Controller
     Controller -->|POST /aggregate/journals<br/>JournalRequest| AggCtrl
@@ -541,26 +543,27 @@ graph TB
     R1 -->|200 OK / 401 Unauthorized| AggSvc
     R2 -->|200 OK / 401 Unauthorized| AggSvc
     R3 -->|200 OK / 401 Unauthorized| AggSvc
-    
-    AggSvc -->|Register expected callbacks| SseSvc
-    SseSvc -->|Create sink| SinkMgr
-    SseSvc -->|Schedule timeout task| Timeout
-    SinkMgr -->|Store sink + counters| SinkInfo
-    
+        
     R1 -.->|Delayed callback<br/>POST /aggregate/callback| AggCtrl
     R2 -.->|Delayed callback<br/>POST /aggregate/callback| AggCtrl
     R3 -.->|Delayed callback<br/>POST /aggregate/callback| AggCtrl
-    
+
+    Browser -.->|Connection close<br/>doOnCancel&#40&#41 | SinkMgr
+    SinkMgr -.->|SSE Stream<br/>text/event-stream<br/>callback/summary events| Browser
+
+    SseSvc --->|Create sink| SinkMgr
+    SseSvc --->|Schedule timeout task| Timeout
+    SinkMgr -->|Store sink + counters| SinkInfo
+    AggSvc -->|Register expected callbacks| SseSvc
+
+    SseSvc -->|Check completion<br/>Cancel timeout| SinkInfo
     AggCtrl -->|Route callbacks| SseSvc
     SseSvc -->|Emit callback event<br/>Update counters| SinkMgr
-    SseSvc -->|Check completion<br/>Cancel timeout| SinkInfo
     
     Timeout -.->|Timeout expired| SseSvc
     SseSvc -.->|Emit TIMEOUT events<br/>Emit summary<br/>Complete sink| SinkMgr
     
-    SinkMgr -.->|SSE Stream<br/>text/event-stream<br/>callback/summary events| Browser
     
-    Browser -.->|Connection close<br/>doOnCancel()| SinkMgr
     SinkMgr -.->|Cancel resource calls<br/>Cancel timeout<br/>Remove sink| SinkInfo
     
     style Browser fill:#e1f5ff
